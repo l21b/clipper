@@ -178,9 +178,7 @@ fn schedule_window_size_persist(width: i32, height: i32) {
                 .and_then(|mut slot| slot.take());
 
             if let Some((width, height)) = current {
-                if let Err(err) = database::save_menu_size(width, height) {
-                    eprintln!("failed to save window size: {}", err);
-                }
+                let _ = database::save_menu_size(width, height);
             }
 
             WINDOW_SIZE_SAVE_PENDING.store(false, Ordering::SeqCst);
@@ -220,7 +218,7 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     if event.state == ShortcutState::Pressed {
-                        hotkey::on_shortcut_triggered(app, &shortcut);
+                        hotkey::on_shortcut_triggered(app, shortcut);
                     }
                 })
                 .build(),
@@ -281,20 +279,14 @@ pub fn run() {
 
             // Create system tray
             let handle = app.handle();
-            tray::create_tray(&handle)?;
-            hotkey::register_from_settings_or_default(&handle)?;
-            if let Err(err) = autostart::sync_from_settings(&handle) {
-                eprintln!("failed to sync auto start from settings: {}", err);
-            }
+            tray::create_tray(handle)?;
+            hotkey::register_from_settings_or_default(handle)?;
+            let _ = autostart::sync_from_settings(handle);
 
             // Start clipboard monitoring automatically
             let monitor_handle = handle.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(err) = clipboard::start_monitoring(monitor_handle).await {
-                    eprintln!("failed to start clipboard monitoring: {}", err);
-                } else {
-                    eprintln!("clipboard monitoring started automatically");
-                }
+                let _ = clipboard::start_monitoring(monitor_handle).await;
             });
 
             Ok(())

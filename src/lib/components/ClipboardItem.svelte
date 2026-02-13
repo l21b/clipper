@@ -22,7 +22,6 @@
     }
 
     function handleCopy() {
-        console.log('[clipper] item click', record.id);
         oncopy?.(record.id);
     }
 

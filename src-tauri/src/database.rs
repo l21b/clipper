@@ -3,8 +3,8 @@ use rusqlite::{Connection, OptionalExtension, Result, params};
 use crate::models::{ClipboardRecord, Settings};
 
 const DB_FILE: &str = "clipper.db";
-pub const MIN_MENU_WIDTH: i32 = 300;
-pub const MIN_MENU_HEIGHT: i32 = 400;
+pub const MIN_MENU_WIDTH: i32 = 280;
+pub const MIN_MENU_HEIGHT: i32 = 430;
 
 #[cfg(target_os = "windows")]
 fn legacy_windows_db_path() -> Option<PathBuf> {

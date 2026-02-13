@@ -41,7 +41,6 @@ pub fn register_hotkey<R: Runtime>(app: &AppHandle<R>, value: &str) -> Result<St
             .map_err(|e| format!("failed to store registered hotkey: {}", e))?,
     );
 
-    eprintln!("registered global shortcut: {}", shortcut_string);
     Ok(shortcut_string)
 }
 
@@ -49,18 +48,13 @@ pub fn register_from_settings_or_default<R: Runtime>(app: &AppHandle<R>) -> Resu
     let settings = crate::database::get_settings().map_err(|e| e.to_string())?;
     match register_hotkey(app, &settings.hotkey) {
         Ok(_) => Ok(()),
-        Err(err) => {
-            eprintln!(
-                "failed to register saved shortcut '{}': {}. fallback to {}",
-                settings.hotkey, err, DEFAULT_SHORTCUT
-            );
+        Err(_err) => {
             register_hotkey(app, DEFAULT_SHORTCUT).map(|_| ())
         }
     }
 }
 
-pub fn on_shortcut_triggered<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
-    eprintln!("shortcut triggered: {}", shortcut);
+pub fn on_shortcut_triggered<R: Runtime>(app: &AppHandle<R>, _shortcut: &Shortcut) {
     if !crate::is_frontend_ready() {
         crate::queue_show_near_cursor_on_ready();
         return;

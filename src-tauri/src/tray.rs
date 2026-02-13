@@ -9,9 +9,10 @@ use image::load_from_memory;
 pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("main") {
         crate::mark_main_window_shown();
+        // 在窗口显示之前发送事件，让前端先设置滚动位置
+        let _ = app.emit("main-window-opened", ());
         window.show()?;
         window.set_focus()?;
-        let _ = app.emit("main-window-opened", ());
     }
     Ok(())
 }
@@ -65,9 +66,10 @@ pub fn show_main_window_near_cursor<R: Runtime>(app: &AppHandle<R>) -> tauri::Re
             let _ = window.set_position(PhysicalPosition::new(x.round() as i32, y.round() as i32));
         }
 
+        // 在窗口显示之前发送事件，让前端先设置滚动位置
+        let _ = app.emit("main-window-opened", ());
         window.show()?;
         window.set_focus()?;
-        let _ = app.emit("main-window-opened", ());
     }
     Ok(())
 }
@@ -125,7 +127,7 @@ pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 ..
             } = event {
                 let app_handle = tray.app_handle();
-                let _ = show_main_window(&app_handle);
+                let _ = show_main_window(app_handle);
             }
         })
         .build(app)?;

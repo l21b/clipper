@@ -340,11 +340,6 @@ pub async fn start_monitoring(_app: AppHandle) -> Result<(), String> {
 
                     if changed && !should_ignore {
                         if raw.len() > MAX_IMAGE_BYTES {
-                            eprintln!(
-                                "clipboard image ignored: too large ({} bytes > {} bytes)",
-                                raw.len(),
-                                MAX_IMAGE_BYTES
-                            );
                             poll_ms = 1400;
                             continue;
                         }
@@ -358,16 +353,11 @@ pub async fn start_monitoring(_app: AppHandle) -> Result<(), String> {
 
                         match build_image_record(image.width, image.height, raw) {
                             Ok(record) => {
-                                if let Err(e) = crate::database::add_record(record) {
-                                    eprintln!("Failed to add image clipboard record: {:?}", e);
-                                } else {
-                                    eprintln!("clipboard record added: image");
+                                if crate::database::add_record(record).is_ok() {
                                     LAST_IMAGE_RECORD_MS.store(now, Ordering::SeqCst);
                                 }
                             }
-                            Err(err) => {
-                                eprintln!("Failed to encode image clipboard record: {}", err);
-                            }
+                            Err(_err) => {}
                         }
                         poll_ms = 1300;
                     } else {
@@ -393,12 +383,7 @@ pub async fn start_monitoring(_app: AppHandle) -> Result<(), String> {
 
                 if changed && !should_ignore {
                     let record = build_text_record(text);
-                    let record_type = record.content_type.clone();
-                    if let Err(e) = crate::database::add_record(record) {
-                        eprintln!("Failed to add clipboard record: {:?}", e);
-                    } else {
-                        eprintln!("clipboard record added: {}", record_type);
-                    }
+                    let _ = crate::database::add_record(record);
                 }
                 poll_ms = 500;
                 continue;

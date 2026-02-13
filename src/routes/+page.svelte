@@ -219,9 +219,7 @@
         const record = records.find(r => r.id === id);
         if (record) {
             try {
-                console.log('[clipper] paste start', { id: record.id, len: record.content?.length ?? 0 });
                 await invoke('paste_record_content', { id: record.id });
-                console.log('[clipper] paste command finished');
             } catch (error) {
                 console.error('Failed to paste record content:', error);
             }
@@ -422,6 +420,10 @@
             console.error('Failed to listen open-about:', error);
         });
         listen('main-window-opened', async () => {
+            const listEl = document.querySelector('.clipboard-list');
+            if (listEl) {
+                listEl.scrollTop = 0;
+            }
             void resetSearchStateOnShow();
             focusSearchInput(16);
         }).then((unlisten) => {
