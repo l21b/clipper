@@ -88,15 +88,23 @@ pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let icon = if let Some(default_icon) = app.default_window_icon() {
         default_icon.clone()
     } else {
+        // 使用内置的默认图标数据，避免文件缺失导致崩溃
         #[cfg(target_os = "windows")]
         let icon_data = include_bytes!("../icons/icon.ico").as_ref();
         #[cfg(not(target_os = "windows"))]
         let icon_data = include_bytes!("../icons/32x32.png").as_ref();
-        let rgba = load_from_memory(icon_data)
-            .expect("failed to decode tray icon bytes")
-            .to_rgba8();
-        let (width, height) = rgba.dimensions();
-        Image::new_owned(rgba.into_raw(), width, height)
+        match load_from_memory(icon_data) {
+            Ok(img) => {
+                let rgba = img.to_rgba8();
+                let (width, height) = rgba.dimensions();
+                Image::new_owned(rgba.into_raw(), width, height)
+            }
+            Err(e) => {
+                eprintln!("failed to decode tray icon: {}", e);
+                // 返回错误，使用 std::io::Error
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e).into());
+            }
+        }
     };
 
     // 创建托盘
