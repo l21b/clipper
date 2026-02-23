@@ -25,21 +25,9 @@
 - SQLite（rusqlite）
 - arboard
 - enigo
+- clipboard-master
 
-## 本地开发
 
-```bash
-# 安装依赖
-npm install
 
-# 启动开发模式
-npm run tauri dev
-```
-
-## 打包发布
-
-```bash
-npm run tauri build
-```
 
 
