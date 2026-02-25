@@ -8,12 +8,12 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
   frontend-check:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -21,19 +21,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Type check
-        run: npm run check
+      - name: Install dependencies and type check
+        run: npm ci && npm run check
 
   rust-check:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      - name: Install system dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -42,10 +39,11 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-      - name: Check formatting
-        run: cd src-tauri && cargo fmt --check
-      - name: Run clippy
-        run: cd src-tauri && cargo clippy -- -D warnings
+      - name: Check formatting and linting
+        run: |
+          cd src-tauri
+          cargo fmt --check
+          cargo clippy -- -D warnings
 
   build-and-release:
     needs: [frontend-check, rust-check]
@@ -63,9 +61,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -74,13 +69,33 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Build and Release
-        uses: tauri-apps/tauri-action@v0
+      - name: Install dependencies and build
+        run: npm ci && npm run tauri build
+
+      - name: Rename and Zip artifacts
+        shell: pwsh
+        run: |
+          $portableExe = "src-tauri/target/release/SnapPaste.exe"
+          if (Test-Path $portableExe) {
+              Compress-Archive -Path $portableExe -DestinationPath "src-tauri/target/release/SnapPaste-windows-64-portable.zip" -Force
+          }
+
+          $setupExe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
+          
+          if ($setupExe) {
+              Compress-Archive -Path $setupExe.FullName -DestinationPath "src-tauri/target/release/SnapPaste-windows-64-setup.zip" -Force
+          }
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/SnapPaste-windows-64-portable.zip
+            src-tauri/target/release/SnapPaste-windows-64-setup.zip
+          tag_name: ${{ github.ref_name }}
+          name: "${{ github.ref_name }}"
+          body: "## Updates"
+          draft: true 
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "SnapPaste ${{ github.ref_name }}"
-          releaseBody: "## Updates"
-          releaseDraft: true 
-          prerelease: false
