@@ -288,9 +288,22 @@ pub fn get_history(limit: i32, offset: i32) -> Result<Vec<ClipboardRecord>, rusq
     Ok(records)
 }
 
+fn escape_like_pattern(keyword: &str) -> String {
+    let mut escaped = String::with_capacity(keyword.len() + 2);
+    escaped.push('%');
+    for ch in keyword.chars() {
+        if ch == '%' || ch == '_' || ch == '\\' {
+            escaped.push('\\');
+        }
+        escaped.push(ch);
+    }
+    escaped.push('%');
+    escaped
+}
+
 pub fn search_history(keyword: &str, limit: i32) -> Result<Vec<ClipboardRecord>, rusqlite::Error> {
     let conn = lock_db_connection()?;
-    let pattern = format!("%{}%", keyword);
+    let pattern = escape_like_pattern(keyword);
 
     let mut stmt = conn.prepare(
         "SELECT id, content_type, COALESCE(content, '') as content,
@@ -299,7 +312,7 @@ pub fn search_history(keyword: &str, limit: i32) -> Result<Vec<ClipboardRecord>,
                 COALESCE(source_app, '') as source_app,
                 created_at
          FROM clipboard_history
-         WHERE content LIKE ?1
+         WHERE content LIKE ?1 ESCAPE '\'
          ORDER BY COALESCE(is_pinned, 0) DESC, created_at DESC
          LIMIT ?2",
     )?;
@@ -395,7 +408,7 @@ pub fn search_favorite_history(
     limit: i32,
 ) -> Result<Vec<ClipboardRecord>, rusqlite::Error> {
     let conn = lock_db_connection()?;
-    let pattern = format!("%{}%", keyword);
+    let pattern = escape_like_pattern(keyword);
 
     let mut stmt = conn.prepare(
         "SELECT id, content_type, COALESCE(content, '') as content,
@@ -405,7 +418,7 @@ pub fn search_favorite_history(
                 created_at
          FROM clipboard_history
          WHERE COALESCE(is_favorite, 0) = 1
-           AND content LIKE ?1
+           AND content LIKE ?1 ESCAPE '\'
          ORDER BY COALESCE(is_pinned, 0) DESC, created_at DESC
          LIMIT ?2",
     )?;
@@ -549,11 +562,6 @@ pub fn delete_record(id: i64) -> Result<usize, rusqlite::Error> {
     conn.execute("DELETE FROM clipboard_history WHERE id = ?1", [id])
 }
 
-pub fn clear_history() -> Result<usize, rusqlite::Error> {
-    let conn = lock_db_connection()?;
-    conn.execute("DELETE FROM clipboard_history", [])
-}
-
 pub fn clear_non_favorite_history() -> Result<usize, rusqlite::Error> {
     let conn = lock_db_connection()?;
     conn.execute(
@@ -643,7 +651,7 @@ pub fn save_settings(settings: &Settings) -> Result<(), rusqlite::Error> {
 pub fn save_window_size(width: i32, height: i32) -> Result<(), rusqlite::Error> {
     let conn = lock_db_connection()?;
     conn.execute(
-        "INSERT OR REPLACE INTO settings (id, window_width, window_height) VALUES (1, ?1, ?2)",
+        "UPDATE settings SET window_width = ?1, window_height = ?2 WHERE id = 1",
         params![width, height],
     )?;
     Ok(())

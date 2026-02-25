@@ -181,20 +181,6 @@ fn image_signature(width: usize, height: usize, rgba: &[u8]) -> String {
     format!("image:{}:{}:{}", width, height, hasher.finish())
 }
 
-fn read_clipboard_record() -> Option<ClipboardRecord> {
-    let mut clipboard = Clipboard::new().ok()?;
-    if let Ok(image) = clipboard.get_image() {
-        return build_image_record(image.width, image.height, image.bytes.as_ref()).ok();
-    }
-    if let Ok(text) = clipboard.get_text() {
-        // 过滤掉只包含空白字符的内容
-        if text.trim().is_empty() {
-            return None;
-        }
-        return Some(build_text_record(text));
-    }
-    None
-}
 
 /// 设置剪贴板文本（使用 arboard）
 pub fn set_clipboard_text(text: &str) -> Result<(), String> {
@@ -526,7 +512,6 @@ fn spawn_event_driven_monitor(
 }
 
 /// 启动剪贴板监听
-#[tauri::command]
 pub async fn start_monitoring(app: AppHandle) -> Result<(), String> {
     if MONITORING.swap(true, Ordering::SeqCst) {
         return Ok(());
@@ -548,26 +533,6 @@ pub async fn start_monitoring(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 停止剪贴板监听
-#[tauri::command]
-pub async fn stop_monitoring() -> Result<(), String> {
-    MONITORING.store(false, Ordering::SeqCst);
-    let _ = next_monitor_session_id();
-    Ok(())
-}
-
-/// 手动检查剪贴板并读取
-#[tauri::command]
-pub async fn check_and_read_clipboard() -> Result<Option<ClipboardRecord>, String> {
-    Ok(read_clipboard_record())
-}
-
-/// 设置忽略下一次剪贴板变化（用于前端复制操作时避免重复记录）
-#[tauri::command]
-pub async fn ignore_next_change() {
-    IGNORE_NEXT_CHANGE.store(true, Ordering::SeqCst);
-}
-
 /// 使用 enigo 模拟 Ctrl+V 粘贴到焦点窗口
 fn send_paste_shortcut(focus_settle_ms: u64) {
     let mut enigo = Enigo::new();
@@ -586,12 +551,6 @@ fn send_paste_shortcut(focus_settle_ms: u64) {
     enigo.key_click(Key::Layout('v'));
     std::thread::sleep(Duration::from_millis(PASTE_KEY_STEP_MS));
     enigo.key_up(modifier);
-}
-
-#[tauri::command]
-pub async fn paste_to_focus_window() -> Result<(), String> {
-    send_paste_shortcut(PASTE_SETTLE_MS_TEXT);
-    Ok(())
 }
 
 /// 一次性完成复制并粘贴：写剪贴板 -> 隐藏窗口 -> 发送粘贴按键
@@ -640,8 +599,3 @@ pub async fn paste_record_content(app: AppHandle, id: i64) -> Result<(), String>
     })
 }
 
-/// 设置剪贴板文本（TAURI 命令）
-#[tauri::command]
-pub async fn set_clipboard_content(text: String) -> Result<(), String> {
-    set_clipboard_text(&text)
-}

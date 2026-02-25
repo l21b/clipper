@@ -3,14 +3,18 @@ use tauri_plugin_autostart::ManagerExt;
 
 pub fn set_enabled<R: Runtime>(app: &AppHandle<R>, enabled: bool) -> Result<(), String> {
     let manager = app.autolaunch();
+    let currently_enabled = manager.is_enabled().unwrap_or(false);
+    if enabled == currently_enabled {
+        return Ok(());
+    }
     if enabled {
         manager
             .enable()
             .map_err(|e| format!("failed to enable auto start: {}", e))?;
     } else {
-        manager
-            .disable()
-            .map_err(|e| format!("failed to disable auto start: {}", e))?;
+        if let Err(e) = manager.disable() {
+            eprintln!("[WARN] auto start disable skipped: {}", e);
+        }
     }
     Ok(())
 }

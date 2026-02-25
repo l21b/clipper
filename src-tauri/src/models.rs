@@ -30,7 +30,7 @@ impl Default for Settings {
             hotkey_key: 0,
             hotkey: "Ctrl+Shift+V".to_string(),
             theme: "system".to_string(),
-            keep_days: 30,
+            keep_days: 1,
             max_records: 500,
             auto_start: false,
         }
