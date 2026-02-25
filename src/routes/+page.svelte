@@ -346,7 +346,7 @@
                 ? "clear_favorite_items"
                 : "clear_history_only";
             await invoke(command);
-            records = [];
+            await loadHistory(false);
         } catch (error) {
             console.error("Failed to clear history:", error);
         } finally {
