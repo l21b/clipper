@@ -7,14 +7,11 @@ mod models;
 mod tray;
 
 use commands::{
-    add_clipboard_record, add_custom_favorite_record, clear_clipboard_history,
-    clear_favorite_items, clear_history_only, delete_clipboard_record, export_favorites_json,
+    add_custom_favorite_record, clear_favorite_items, clear_history_only, delete_clipboard_record,
     export_favorites_to_path, get_app_settings, get_favorite_records, get_history_records,
-    import_favorites_from_path, import_favorites_json, init_db, save_app_settings,
-    search_favorite_records, search_records, set_frontend_ready, set_record_favorite_state,
-    set_record_pinned_state, suspend_auto_hide,
+    import_favorites_from_path, save_app_settings, search_favorite_records, search_records,
+    set_frontend_ready, set_record_favorite_state, set_record_pinned_state, suspend_auto_hide,
 };
-use models::Settings;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
@@ -142,10 +139,6 @@ fn schedule_hide_recheck(window: tauri::Window, delay_ms: u64) {
     });
 }
 
-pub struct AppState {
-    pub settings: Settings,
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     FRONTEND_READY.store(false, Ordering::SeqCst);
@@ -167,25 +160,17 @@ pub fn run() {
                 })
                 .build(),
         )
-        .manage(AppState {
-            settings: Settings::default(),
-        })
         .invoke_handler(tauri::generate_handler![
-            init_db,
             get_history_records,
             search_records,
             get_favorite_records,
             search_favorite_records,
-            add_clipboard_record,
             add_custom_favorite_record,
             delete_clipboard_record,
-            clear_clipboard_history,
             clear_history_only,
             clear_favorite_items,
             set_record_favorite_state,
             set_record_pinned_state,
-            export_favorites_json,
-            import_favorites_json,
             export_favorites_to_path,
             import_favorites_from_path,
             get_app_settings,
@@ -193,13 +178,7 @@ pub fn run() {
             suspend_auto_hide,
             set_frontend_ready,
             commands::open_url,
-            clipboard::start_monitoring,
-            clipboard::stop_monitoring,
-            clipboard::check_and_read_clipboard,
-            clipboard::ignore_next_change,
-            clipboard::paste_to_focus_window,
             clipboard::paste_record_content,
-            clipboard::set_clipboard_content,
         ])
         .setup(|app| {
             // Initialize database on startup

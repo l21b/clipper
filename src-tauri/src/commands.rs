@@ -1,13 +1,12 @@
 use crate::database::{
-    add_record, clear_favorite_history, clear_history, clear_non_favorite_history, delete_record,
-    favorite_exists, get_all_favorite_history, get_favorite_history, get_history, get_settings,
-    save_settings, search_favorite_history, search_history, set_record_favorite, set_record_pinned,
+    add_record, clear_favorite_history, clear_non_favorite_history, delete_record, favorite_exists,
+    get_all_favorite_history, get_favorite_history, get_history, get_settings, save_settings,
+    search_favorite_history, search_history, set_record_favorite, set_record_pinned,
 };
 use crate::models::{ClipboardRecord, Settings};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::AppHandle;
-use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FavoriteTransferItem {
@@ -103,43 +102,25 @@ fn import_favorites_from_payload(payload: &str) -> Result<i32, String> {
 }
 
 #[tauri::command]
-pub fn init_db() -> Result<(), String> {
-    crate::database::init_database().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn get_history_records(
-    _state: State<'_, crate::AppState>,
-    limit: i32,
-    offset: i32,
-) -> Result<Vec<ClipboardRecord>, String> {
+pub fn get_history_records(limit: i32, offset: i32) -> Result<Vec<ClipboardRecord>, String> {
     let records = get_history(limit, offset).map_err(|e| e.to_string())?;
     Ok(records)
 }
 
 #[tauri::command]
-pub fn search_records(
-    _state: State<'_, crate::AppState>,
-    keyword: String,
-    limit: i32,
-) -> Result<Vec<ClipboardRecord>, String> {
+pub fn search_records(keyword: String, limit: i32) -> Result<Vec<ClipboardRecord>, String> {
     let records = search_history(&keyword, limit).map_err(|e| e.to_string())?;
     Ok(records)
 }
 
 #[tauri::command]
-pub fn get_favorite_records(
-    _state: State<'_, crate::AppState>,
-    limit: i32,
-    offset: i32,
-) -> Result<Vec<ClipboardRecord>, String> {
+pub fn get_favorite_records(limit: i32, offset: i32) -> Result<Vec<ClipboardRecord>, String> {
     let records = get_favorite_history(limit, offset).map_err(|e| e.to_string())?;
     Ok(records)
 }
 
 #[tauri::command]
 pub fn search_favorite_records(
-    _state: State<'_, crate::AppState>,
     keyword: String,
     limit: i32,
 ) -> Result<Vec<ClipboardRecord>, String> {
@@ -148,33 +129,7 @@ pub fn search_favorite_records(
 }
 
 #[tauri::command]
-pub fn add_clipboard_record(
-    _state: State<'_, crate::AppState>,
-    content_type: String,
-    content: String,
-    source_app: String,
-) -> Result<i64, String> {
-    use chrono::Local;
-
-    let record = ClipboardRecord {
-        id: 0,
-        content_type,
-        content,
-        image_data: None,
-        is_favorite: false,
-        is_pinned: false,
-        source_app,
-        created_at: Local::now().to_rfc3339(),
-    };
-
-    add_record(record).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn add_custom_favorite_record(
-    _state: State<'_, crate::AppState>,
-    content: String,
-) -> Result<i64, String> {
+pub fn add_custom_favorite_record(content: String) -> Result<i64, String> {
     use chrono::Local;
 
     let text = content.trim();
@@ -197,68 +152,37 @@ pub fn add_custom_favorite_record(
 }
 
 #[tauri::command]
-pub fn delete_clipboard_record(_state: State<'_, crate::AppState>, id: i64) -> Result<(), String> {
+pub fn delete_clipboard_record(id: i64) -> Result<(), String> {
     delete_record(id).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn clear_clipboard_history(_state: State<'_, crate::AppState>) -> Result<(), String> {
-    clear_history().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-pub fn clear_history_only(_state: State<'_, crate::AppState>) -> Result<(), String> {
+pub fn clear_history_only() -> Result<(), String> {
     clear_non_favorite_history().map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn clear_favorite_items(_state: State<'_, crate::AppState>) -> Result<(), String> {
+pub fn clear_favorite_items() -> Result<(), String> {
     clear_favorite_history().map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn set_record_favorite_state(
-    _state: State<'_, crate::AppState>,
-    id: i64,
-    favorite: bool,
-) -> Result<(), String> {
+pub fn set_record_favorite_state(id: i64, favorite: bool) -> Result<(), String> {
     set_record_favorite(id, favorite).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn set_record_pinned_state(
-    _state: State<'_, crate::AppState>,
-    id: i64,
-    pinned: bool,
-) -> Result<(), String> {
+pub fn set_record_pinned_state(id: i64, pinned: bool) -> Result<(), String> {
     set_record_pinned(id, pinned).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn export_favorites_json(_state: State<'_, crate::AppState>) -> Result<String, String> {
-    let payload = collect_favorites_package()?;
-    serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn import_favorites_json(
-    _state: State<'_, crate::AppState>,
-    payload: String,
-) -> Result<i32, String> {
-    import_favorites_from_payload(&payload)
-}
-
-#[tauri::command]
-pub fn export_favorites_to_path(
-    _state: State<'_, crate::AppState>,
-    path: String,
-) -> Result<FavoriteExportResult, String> {
+pub fn export_favorites_to_path(path: String) -> Result<FavoriteExportResult, String> {
     let path = path.trim();
     if path.is_empty() {
         return Err("path is empty".to_string());
@@ -290,10 +214,7 @@ pub fn export_favorites_to_path(
 }
 
 #[tauri::command]
-pub fn import_favorites_from_path(
-    _state: State<'_, crate::AppState>,
-    path: String,
-) -> Result<i32, String> {
+pub fn import_favorites_from_path(path: String) -> Result<i32, String> {
     let path = path.trim();
     if path.is_empty() {
         return Err("path is empty".to_string());
@@ -304,30 +225,35 @@ pub fn import_favorites_from_path(
 }
 
 #[tauri::command]
-pub fn get_app_settings(_state: State<'_, crate::AppState>) -> Result<Settings, String> {
+pub fn get_app_settings() -> Result<Settings, String> {
     get_settings().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn save_app_settings(
-    app: AppHandle,
-    _state: State<'_, crate::AppState>,
-    settings: Settings,
-) -> Result<(), String> {
+pub fn save_app_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
+    // 1. 先尝试注册快捷键，获取标准化后的字符串
     let normalized = crate::hotkey::register_hotkey(&app, &settings.hotkey)?;
     let mut updated = settings;
     updated.hotkey = normalized;
-    crate::autostart::set_enabled(&app, updated.auto_start)?;
-    save_settings(&updated).map_err(|e| e.to_string())
+
+    // 2. 先保存设置到数据库（最重要的一步，不能被后续操作阻断）
+    save_settings(&updated).map_err(|e| e.to_string())?;
+
+    // 3. 自启动设置为尽力而为，失败不阻断（开发模式下 disable 常因文件不存在而失败）
+    if let Err(e) = crate::autostart::set_enabled(&app, updated.auto_start) {
+        eprintln!("[WARN] auto start toggle failed (non-fatal): {}", e);
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
-pub fn suspend_auto_hide(_state: State<'_, crate::AppState>, ms: Option<u64>) {
+pub fn suspend_auto_hide(ms: Option<u64>) {
     crate::suspend_main_window_auto_hide(ms.unwrap_or(4000));
 }
 
 #[tauri::command]
-pub fn set_frontend_ready(app: AppHandle, _state: State<'_, crate::AppState>) {
+pub fn set_frontend_ready(app: AppHandle) {
     crate::mark_frontend_ready();
     if crate::take_pending_show_near_cursor() {
         let _ = crate::tray::show_main_window_near_cursor(&app);
