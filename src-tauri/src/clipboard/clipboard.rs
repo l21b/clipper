@@ -61,11 +61,13 @@ impl ClipboardContext {
     }
 
     /// 写入富文本 (HTML)
+    #[allow(dead_code)]
     pub fn write_html(&mut self, html: &str, alternate_text: &str) -> Result<(), Error> {
         self.0.set_html(html, Some(alternate_text))
     }
 
     /// 清空剪贴板
+    #[allow(dead_code)]
     pub fn clear(&mut self) -> Result<(), Error> {
         self.0.clear()
     }
@@ -75,10 +77,12 @@ impl ClipboardContext {
 // 便捷原子操作 (向后兼容/简单调用)
 // ==========================================
 
+#[allow(dead_code)]
 pub fn read_text() -> Result<String, Error> {
     ClipboardContext::new()?.read_text()
 }
 
+#[allow(dead_code)]
 pub fn read_image() -> Result<ClipboardImage, Error> {
     ClipboardContext::new()?.read_image()
 }
@@ -91,10 +95,12 @@ pub fn write_image(width: usize, height: usize, bytes: Vec<u8>) -> Result<(), Er
     ClipboardContext::new()?.write_image(width, height, bytes)
 }
 
+#[allow(dead_code)]
 pub fn write_html(html: &str, alternate_text: &str) -> Result<(), Error> {
     ClipboardContext::new()?.write_html(html, alternate_text)
 }
 
+#[allow(dead_code)]
 pub fn clear() -> Result<(), Error> {
     ClipboardContext::new()?.clear()
 }

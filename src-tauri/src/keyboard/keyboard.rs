@@ -92,6 +92,7 @@ pub fn simulate_copy(delay_ms: u64) -> Result<(), String> {
 }
 
 /// 直接模拟键盘逐字输入纯文本
+#[allow(dead_code)]
 pub fn type_text(text: &str, delay_ms: u64) -> Result<(), String> {
     if delay_ms > 0 {
         thread::sleep(Duration::from_millis(delay_ms));

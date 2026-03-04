@@ -61,6 +61,7 @@ pub fn export_favorites_to_path_logic(path: String) -> Result<FavoriteExportResu
 }
 
 /// 从 JSON 数据导入收藏和设置（极速批量插入优化版）
+#[allow(dead_code)]
 pub fn import_favorites_from_payload(payload: &str) -> Result<(i32, bool), String> {
     let parsed: FavoriteTransferPackage =
         serde_json::from_str(payload).map_err(|e| format!("invalid json: {}", e))?;

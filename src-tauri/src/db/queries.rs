@@ -278,6 +278,7 @@ pub fn toggle_pinned(id: i64, is_pinned: bool) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn add_clipboard_record(record: ClipboardRecord) -> Result<i64, String> {
     add_record(record).map_err(|e| e.to_string())
 }

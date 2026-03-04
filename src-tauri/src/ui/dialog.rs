@@ -7,6 +7,7 @@ use tauri::{AppHandle, Emitter};
 pub enum DialogType {
     Info,
     Error,
+    #[allow(dead_code)]
     Success,
 }
 
@@ -31,6 +32,7 @@ fn emit_dialog(app: &AppHandle, event: &str, msg_type: DialogType, title: &str, 
 }
 
 /// 触发常规内部弹窗 (主要用于在主界面内显示提示)
+#[allow(dead_code)]
 pub fn show_dialog(app: &AppHandle, msg_type: DialogType, title: &str, content: &str) {
     emit_dialog(app, "show-dialog", msg_type, title, content);
 }

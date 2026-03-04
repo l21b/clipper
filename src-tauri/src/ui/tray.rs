@@ -1,7 +1,6 @@
 use tauri::image::Image;
-use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager};
 
 const TRAY_ICON_DATA: &[u8] = if cfg!(target_os = "windows") {
     include_bytes!("../../icons/icon.ico")
@@ -16,10 +15,14 @@ const MENU_ID_QUIT: &str = "quit";
 /// 创建系统托盘，应在应用启动时调用（如 `setup` 钩子）。
 pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     // 创建菜单
-    let settings = MenuItem::with_id(app, MENU_ID_SETTINGS, "设置", true, None::<&str>)?;
-    let about = MenuItem::with_id(app, MENU_ID_ABOUT, "关于", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, MENU_ID_QUIT, "退出程序", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&settings, &about, &quit])?;
+    let settings =
+        tauri::menu::MenuItem::with_id(app, MENU_ID_SETTINGS, "设置", true, None::<&str>)?;
+    let about = tauri::menu::MenuItem::with_id(app, MENU_ID_ABOUT, "关于", true, None::<&str>)?;
+    let quit = tauri::menu::MenuItem::with_id(app, MENU_ID_QUIT, "退出程序", true, None::<&str>)?;
+
+    let menu = tauri::menu::MenuBuilder::new(app)
+        .items(&[&settings, &about, &quit])
+        .build()?;
 
     // 加载图标
     let icon = app.default_window_icon().cloned().unwrap_or_else(|| {
@@ -34,7 +37,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         .icon(icon)
         .tooltip("SnapPaste")
         .menu(&menu)
-        .menu_on_left_click(false)
+        .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             MENU_ID_SETTINGS => {
                 let _ = crate::ui::window_manager::show_main_window(app);
